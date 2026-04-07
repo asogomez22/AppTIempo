@@ -117,11 +117,6 @@ export function getWeatherLabel(code: number) {
   return WEATHER_LABELS[code] ?? "Tiempo variable";
 }
 
-export function formatHourLabel(timestamp: string) {
-  const [, hour = "--:--"] = timestamp.split("T");
-  return hour.slice(0, 5);
-}
-
 export function formatTimestampLabel(timestamp: string) {
   const [day = "", hour = "--:--"] = timestamp.split("T");
   const safeDate = new Date(`${day}T12:00:00`);
@@ -132,15 +127,10 @@ export function formatTimestampLabel(timestamp: string) {
   }).format(safeDate)} - ${hour.slice(0, 5)}`;
 }
 
-export function formatDayLabel(day: string) {
-  return new Intl.DateTimeFormat("es-ES", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(new Date(`${day}T12:00:00`));
-}
-
-export async function searchLocations(query: string, signal?: AbortSignal) {
+export async function searchLocationsRemote(
+  query: string,
+  signal?: AbortSignal,
+) {
   const params = new URLSearchParams({
     name: query,
     count: "6",
@@ -152,6 +142,7 @@ export async function searchLocations(query: string, signal?: AbortSignal) {
     `https://geocoding-api.open-meteo.com/v1/search?${params.toString()}`,
     {
       signal,
+      cache: "no-store",
     },
   );
 
@@ -172,7 +163,7 @@ export async function searchLocations(query: string, signal?: AbortSignal) {
   }));
 }
 
-export async function getForecast(
+export async function getForecastRemote(
   location: LocationOption,
 ): Promise<ForecastSnapshot> {
   const params = new URLSearchParams({

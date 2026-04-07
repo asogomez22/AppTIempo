@@ -5,9 +5,7 @@ import { useEffect, useState } from "react";
 import {
   DEFAULT_LOCATION,
   formatTimestampLabel,
-  getForecast,
   getWeatherLabel,
-  searchLocations,
   type ForecastSnapshot,
   type LocationOption,
 } from "@/lib/weather";
@@ -142,23 +140,79 @@ function InfoPill({
   );
 }
 
-export default function WeatherDashboard() {
-  const [query, setQuery] = useState(DEFAULT_LOCATION.name);
-  const [forecast, setForecast] = useState<ForecastSnapshot | null>(null);
+async function searchLocations(query: string) {
+  const params = new URLSearchParams({ query });
+  const response = await fetch(`/api/weather/search?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Location lookup failed");
+  }
+
+  return (await response.json()) as LocationOption[];
+}
+
+async function getForecast(location: LocationOption) {
+  const params = new URLSearchParams({
+    name: location.name,
+    label: location.label,
+    latitude: String(location.latitude),
+    longitude: String(location.longitude),
+  });
+
+  if (location.country) {
+    params.set("country", location.country);
+  }
+
+  if (location.admin1) {
+    params.set("admin1", location.admin1);
+  }
+
+  if (location.timezone) {
+    params.set("timezone", location.timezone);
+  }
+
+  const response = await fetch(`/api/weather/forecast?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Forecast lookup failed");
+  }
+
+  return (await response.json()) as ForecastSnapshot;
+}
+
+export default function WeatherDashboard({
+  initialForecast,
+}: {
+  initialForecast: ForecastSnapshot | null;
+}) {
+  const [query, setQuery] = useState(
+    initialForecast?.location.name ?? DEFAULT_LOCATION.name,
+  );
+  const [forecast, setForecast] = useState<ForecastSnapshot | null>(
+    initialForecast,
+  );
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    if (initialForecast) {
+      return;
+    }
+
     let active = true;
 
     async function bootstrap() {
       setIsLoading(true);
 
       try {
-        const initialForecast = await getForecast(DEFAULT_LOCATION);
+        const nextForecast = await getForecast(DEFAULT_LOCATION);
 
         if (active) {
-          setForecast(initialForecast);
+          setForecast(nextForecast);
           setError(null);
         }
       } catch {
@@ -177,7 +231,7 @@ export default function WeatherDashboard() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialForecast]);
 
   async function loadLocation(location: LocationOption) {
     setIsLoading(true);
