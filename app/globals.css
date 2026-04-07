@@ -22,8 +22,8 @@ html {
 
 body {
   background:
-    radial-gradient(circle at top, rgba(34, 211, 238, 0.15), transparent 34%),
-    linear-gradient(180deg, #020617 0%, #082f49 52%, #020617 100%);
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.22), transparent 32%),
+    linear-gradient(180deg, #07111f 0%, #102a43 55%, #07111f 100%);
   color: var(--foreground);
   font-family: var(--font-space-grotesk), sans-serif;
 }

@@ -1,11 +1,9 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useDeferredValue, useEffect, useState, useTransition } from "react";
+import type { FormEvent, SVGProps } from "react";
+import { useEffect, useState } from "react";
 import {
   DEFAULT_LOCATION,
-  formatDayLabel,
-  formatHourLabel,
   formatTimestampLabel,
   getForecast,
   getWeatherLabel,
@@ -14,7 +12,120 @@ import {
   type LocationOption,
 } from "@/lib/weather";
 
-function MetricCard({
+function SunIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" {...props}>
+      <circle cx="32" cy="32" r="12" className="fill-amber-300" />
+      <path
+        d="M32 6v8M32 50v8M6 32h8M50 32h8M13.6 13.6l5.7 5.7M44.7 44.7l5.7 5.7M50.4 13.6l-5.7 5.7M19.3 44.7l-5.7 5.7"
+        className="stroke-amber-200"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CloudIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M22 48h22c7.7 0 14-5.8 14-13s-6.3-13-14-13c-1.1 0-2.2.1-3.2.4C38.4 15.6 32.8 12 26.5 12c-8.4 0-15.3 6.2-16.3 14.3C5.5 28.1 2 32.3 2 37c0 6.1 4.9 11 11 11h9Z"
+        className="fill-slate-200"
+      />
+    </svg>
+  );
+}
+
+function RainIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M22 38h22c7.7 0 14-5.8 14-13s-6.3-13-14-13c-1.1 0-2.2.1-3.2.4C38.4 5.6 32.8 2 26.5 2c-8.4 0-15.3 6.2-16.3 14.3C5.5 18.1 2 22.3 2 27c0 6.1 4.9 11 11 11h9Z"
+        className="fill-slate-200"
+      />
+      <path
+        d="M22 45l-3 8M34 45l-3 8M46 45l-3 8"
+        className="stroke-sky-300"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function StormIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M22 38h22c7.7 0 14-5.8 14-13s-6.3-13-14-13c-1.1 0-2.2.1-3.2.4C38.4 5.6 32.8 2 26.5 2c-8.4 0-15.3 6.2-16.3 14.3C5.5 18.1 2 22.3 2 27c0 6.1 4.9 11 11 11h9Z"
+        className="fill-slate-200"
+      />
+      <path
+        d="M34 41 26 54h8l-4 10 12-16h-8l4-7Z"
+        className="fill-amber-300"
+      />
+    </svg>
+  );
+}
+
+function SnowIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M22 38h22c7.7 0 14-5.8 14-13s-6.3-13-14-13c-1.1 0-2.2.1-3.2.4C38.4 5.6 32.8 2 26.5 2c-8.4 0-15.3 6.2-16.3 14.3C5.5 18.1 2 22.3 2 27c0 6.1 4.9 11 11 11h9Z"
+        className="fill-slate-200"
+      />
+      <path
+        d="M24 46v12M18 52h12M19.8 47.8l8.4 8.4M28.2 47.8l-8.4 8.4M44 46v12M38 52h12M39.8 47.8l8.4 8.4M48.2 47.8l-8.4 8.4"
+        className="stroke-cyan-200"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function FogIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 64 64" fill="none" aria-hidden="true" {...props}>
+      <path
+        d="M16 24h32M10 34h44M16 44h32"
+        className="stroke-slate-200"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function WeatherIcon({ code }: { code: number }) {
+  const className = "h-28 w-28 drop-shadow-[0_12px_30px_rgba(15,23,42,0.35)]";
+
+  if (code === 0 || code === 1) {
+    return <SunIcon className={className} />;
+  }
+
+  if (code === 45 || code === 48) {
+    return <FogIcon className={className} />;
+  }
+
+  if (code >= 95) {
+    return <StormIcon className={className} />;
+  }
+
+  if (code >= 71 && code <= 86) {
+    return <SnowIcon className={className} />;
+  }
+
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) {
+    return <RainIcon className={className} />;
+  }
+
+  return <CloudIcon className={className} />;
+}
+
+function InfoPill({
   label,
   value,
 }: {
@@ -22,47 +133,37 @@ function MetricCard({
   value: string;
 }) {
   return (
-    <article className="rounded-[28px] border border-white/12 bg-slate-950/55 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.2)] backdrop-blur">
-      <p className="font-mono text-xs uppercase tracking-[0.28em] text-sky-200/70">
+    <div className="rounded-full border border-white/12 bg-white/8 px-4 py-2 text-center">
+      <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-slate-300">
         {label}
       </p>
-      <p className="mt-3 text-3xl font-semibold text-white">{value}</p>
-    </article>
+      <p className="mt-1 text-sm font-medium text-white">{value}</p>
+    </div>
   );
 }
 
 export default function WeatherDashboard() {
   const [query, setQuery] = useState(DEFAULT_LOCATION.name);
   const [forecast, setForecast] = useState<ForecastSnapshot | null>(null);
-  const [suggestions, setSuggestions] = useState<LocationOption[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isPending, startTransition] = useTransition();
-
-  const deferredQuery = useDeferredValue(query.trim());
-  const busy = isLoading || isPending;
 
   useEffect(() => {
     let active = true;
 
     async function bootstrap() {
       setIsLoading(true);
-      setError(null);
 
       try {
         const initialForecast = await getForecast(DEFAULT_LOCATION);
 
-        if (!active) {
-          return;
-        }
-
-        startTransition(() => {
+        if (active) {
           setForecast(initialForecast);
-          setSuggestions([]);
-        });
+          setError(null);
+        }
       } catch {
         if (active) {
-          setError("No he podido cargar la prevision inicial.");
+          setError("No he podido cargar el tiempo ahora mismo.");
         }
       } finally {
         if (active) {
@@ -76,53 +177,7 @@ export default function WeatherDashboard() {
     return () => {
       active = false;
     };
-  }, [startTransition]);
-
-  useEffect(() => {
-    if (deferredQuery.length < 3) {
-      setSuggestions([]);
-      return;
-    }
-
-    if (
-      forecast &&
-      deferredQuery.toLowerCase() === forecast.location.name.toLowerCase()
-    ) {
-      setSuggestions([]);
-      return;
-    }
-
-    let active = true;
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      try {
-        const nextSuggestions = await searchLocations(
-          deferredQuery,
-          controller.signal,
-        );
-
-        if (active) {
-          setSuggestions(nextSuggestions);
-        }
-      } catch (lookupError) {
-        if (
-          active &&
-          !(
-            lookupError instanceof DOMException &&
-            lookupError.name === "AbortError"
-          )
-        ) {
-          setSuggestions([]);
-        }
-      }
-    }, 250);
-
-    return () => {
-      active = false;
-      controller.abort();
-      window.clearTimeout(timer);
-    };
-  }, [deferredQuery, forecast]);
+  }, []);
 
   async function loadLocation(location: LocationOption) {
     setIsLoading(true);
@@ -130,14 +185,10 @@ export default function WeatherDashboard() {
 
     try {
       const nextForecast = await getForecast(location);
-
-      startTransition(() => {
-        setForecast(nextForecast);
-        setQuery(nextForecast.location.name);
-        setSuggestions([]);
-      });
+      setForecast(nextForecast);
+      setQuery(nextForecast.location.name);
     } catch {
-      setError("No he podido consultar el tiempo para esa ubicacion.");
+      setError("No he podido consultar esa ciudad.");
     } finally {
       setIsLoading(false);
     }
@@ -149,17 +200,7 @@ export default function WeatherDashboard() {
     const cleanQuery = query.trim();
 
     if (!cleanQuery) {
-      setError("Escribe una ciudad para lanzar la busqueda.");
-      return;
-    }
-
-    const directMatch =
-      suggestions.find(
-        (option) => option.name.toLowerCase() === cleanQuery.toLowerCase(),
-      ) ?? suggestions[0];
-
-    if (directMatch) {
-      await loadLocation(directMatch);
+      setError("Escribe una ciudad.");
       return;
     }
 
@@ -170,13 +211,13 @@ export default function WeatherDashboard() {
       const results = await searchLocations(cleanQuery);
 
       if (!results.length) {
-        setError("No he encontrado ninguna ciudad con ese nombre.");
+        setError("No he encontrado esa ciudad.");
         return;
       }
 
       await loadLocation(results[0]);
     } catch {
-      setError("La busqueda ha fallado. Vuelve a intentarlo.");
+      setError("La busqueda ha fallado.");
     } finally {
       setIsLoading(false);
     }
@@ -188,8 +229,8 @@ export default function WeatherDashboard() {
       return;
     }
 
-    setError(null);
     setIsLoading(true);
+    setError(null);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -202,294 +243,89 @@ export default function WeatherDashboard() {
       },
       () => {
         setIsLoading(false);
-        setError("No he podido leer tu ubicacion actual.");
+        setError("No he podido leer tu ubicacion.");
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-      },
+      { enableHighAccuracy: true, timeout: 10000 },
     );
   }
 
-  const headline = forecast
-    ? getWeatherLabel(forecast.current.weatherCode)
-    : "Cargando";
+  const weatherCode = forecast?.current.weatherCode ?? 2;
+  const title = forecast?.location.label ?? "Cargando ciudad";
+  const temperature = forecast
+    ? `${Math.round(forecast.current.temperature)}C`
+    : "--";
+  const description = forecast ? getWeatherLabel(weatherCode) : "Cargando";
 
   return (
-    <main className="relative isolate overflow-hidden px-5 py-8 text-slate-100 sm:px-8 lg:px-10 lg:py-10">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-0 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-cyan-400/18 blur-[120px]" />
-        <div className="absolute -left-24 top-40 h-72 w-72 rounded-full bg-blue-500/16 blur-[120px]" />
-        <div className="absolute right-0 top-24 h-80 w-80 rounded-full bg-emerald-400/12 blur-[140px]" />
-      </div>
+    <main className="flex min-h-screen items-center justify-center px-4 py-10 text-slate-100">
+      <section className="w-full max-w-md rounded-[36px] border border-white/12 bg-slate-950/70 p-6 shadow-[0_28px_80px_rgba(15,23,42,0.45)] backdrop-blur md:p-8">
+        <div className="mx-auto flex w-full max-w-xs flex-col items-center text-center">
+          <WeatherIcon code={weatherCode} />
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <section className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
-          <article className="rounded-[36px] border border-white/12 bg-slate-950/55 p-6 shadow-[0_25px_90px_rgba(2,132,199,0.18)] backdrop-blur md:p-8">
-            <div className="flex flex-wrap gap-2">
-              {["Next.js 16", "Docker", "GitHub Actions", "Puerto 1234"].map(
-                (item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-sky-300/25 bg-sky-400/10 px-3 py-1 font-mono text-xs uppercase tracking-[0.24em] text-sky-100/90"
-                  >
-                    {item}
-                  </span>
-                ),
-              )}
-            </div>
+          <p className="mt-6 font-mono text-xs uppercase tracking-[0.32em] text-sky-200/75">
+            Widget del tiempo
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-white">
+            {title}
+          </h1>
+          <p className="mt-2 text-sm text-slate-300">{description}</p>
 
-            <div className="mt-8 max-w-3xl">
-              <p className="font-mono text-sm uppercase tracking-[0.35em] text-sky-200/70">
-                Proyecto para CI/CD real
-              </p>
-              <h1 className="mt-4 max-w-2xl text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-6xl">
-                AppTiempo lista para desplegarse sola en tu VPS.
-              </h1>
-              <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">
-                Busqueda de ciudades, uso de tu ubicacion, prevision por horas y
-                despliegue preparado con Docker + GitHub Actions para publicar
-                la app por el puerto 1234.
-              </p>
-            </div>
+          <p className="mt-6 text-7xl font-semibold tracking-tight text-white">
+            {temperature}
+          </p>
 
-            <form className="mt-8 flex flex-col gap-3" onSubmit={handleSearch}>
-              <label
-                htmlFor="city-search"
-                className="font-mono text-xs uppercase tracking-[0.3em] text-slate-300"
+          <div className="mt-6 grid w-full grid-cols-2 gap-3">
+            <InfoPill
+              label="Humedad"
+              value={
+                forecast ? `${Math.round(forecast.current.humidity)}%` : "--"
+              }
+            />
+            <InfoPill
+              label="Viento"
+              value={
+                forecast
+                  ? `${Math.round(forecast.current.windSpeed)} km/h`
+                  : "--"
+              }
+            />
+          </div>
+
+          <p className="mt-5 text-sm text-slate-400">
+            {forecast ? formatTimestampLabel(forecast.current.time) : "--:--"}
+          </p>
+
+          <form className="mt-8 flex w-full flex-col gap-3" onSubmit={handleSearch}>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar ciudad"
+              className="min-h-12 rounded-full border border-white/12 bg-white/8 px-4 text-white outline-none transition focus:border-sky-300/60 focus:bg-white/12"
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="min-h-11 rounded-full bg-cyan-300 px-4 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-cyan-100"
               >
-                Buscar ciudad
-              </label>
-              <div className="flex flex-col gap-3 md:flex-row">
-                <input
-                  id="city-search"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Ejemplo: Madrid, Valencia, Berlin..."
-                  className="min-h-14 flex-1 rounded-full border border-white/12 bg-white/8 px-5 text-base text-white outline-none transition focus:border-sky-300/60 focus:bg-white/12"
-                />
-                <div className="flex gap-3">
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    className="min-h-14 rounded-full bg-cyan-300 px-6 font-semibold text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:bg-cyan-100"
-                  >
-                    {busy ? "Buscando..." : "Buscar"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUseCurrentLocation}
-                    disabled={busy}
-                    className="min-h-14 rounded-full border border-white/16 bg-white/6 px-6 font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    Mi ubicacion
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {suggestions.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {suggestions.map((option) => (
-                  <button
-                    key={`${option.latitude}-${option.longitude}-${option.label}`}
-                    type="button"
-                    onClick={() => {
-                      setQuery(option.name);
-                      void loadLocation(option);
-                    }}
-                    className="rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm text-slate-100 transition hover:border-sky-300/40 hover:bg-sky-300/10"
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            <div className="mt-8 grid gap-4 md:grid-cols-3">
-              <MetricCard label="Estado" value={headline} />
-              <MetricCard
-                label="Actualizado"
-                value={
-                  forecast ? formatTimestampLabel(forecast.current.time) : "--:--"
-                }
-              />
-              <MetricCard label="Pipeline" value="CI -> GHCR -> VPS" />
+                {isLoading ? "Cargando..." : "Buscar"}
+              </button>
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                disabled={isLoading}
+                className="min-h-11 rounded-full border border-white/12 bg-white/6 px-4 font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                Mi ubicacion
+              </button>
             </div>
-          </article>
+          </form>
 
-          <article className="rounded-[36px] border border-white/12 bg-gradient-to-br from-slate-950/75 via-sky-950/55 to-cyan-500/18 p-6 shadow-[0_25px_90px_rgba(14,165,233,0.18)] backdrop-blur md:p-8">
-            <p className="font-mono text-xs uppercase tracking-[0.3em] text-sky-100/70">
-              Resumen actual
-            </p>
-            <div className="mt-6 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-3xl font-semibold text-white sm:text-4xl">
-                  {forecast?.location.label ?? "Cargando ciudad"}
-                </h2>
-                <p className="mt-2 text-sm uppercase tracking-[0.3em] text-slate-300/80">
-                  {forecast ? headline : "Consultando datos"}
-                </p>
-              </div>
-              <div className="rounded-full border border-white/10 bg-white/8 px-4 py-2 font-mono text-xs uppercase tracking-[0.24em] text-sky-100">
-                Online
-              </div>
-            </div>
-
-            <div className="mt-10 flex items-end gap-4">
-              <p className="text-7xl font-semibold tracking-tight text-white">
-                {forecast ? `${Math.round(forecast.current.temperature)}C` : "--"}
-              </p>
-              <div className="pb-2 text-slate-200">
-                <p className="font-mono text-xs uppercase tracking-[0.28em] text-slate-300/70">
-                  Sensacion termica
-                </p>
-                <p className="mt-2 text-xl font-medium">
-                  {forecast
-                    ? `${Math.round(forecast.current.apparentTemperature)}C`
-                    : "--"}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <MetricCard
-                label="Humedad"
-                value={
-                  forecast ? `${Math.round(forecast.current.humidity)}%` : "--"
-                }
-              />
-              <MetricCard
-                label="Viento"
-                value={
-                  forecast
-                    ? `${Math.round(forecast.current.windSpeed)} km/h`
-                    : "--"
-                }
-              />
-              <MetricCard
-                label="Coords"
-                value={
-                  forecast
-                    ? `${forecast.location.latitude.toFixed(1)}, ${forecast.location.longitude.toFixed(1)}`
-                    : "--"
-                }
-              />
-            </div>
-
-            <div className="mt-8 rounded-[28px] border border-white/12 bg-white/6 p-5">
-              <p className="font-mono text-xs uppercase tracking-[0.28em] text-sky-100/70">
-                Despliegue preparado
-              </p>
-              <p className="mt-3 text-sm leading-7 text-slate-200">
-                El workflow construye imagen Docker, la publica en GHCR y por
-                SSH actualiza el contenedor del VPS con `docker run -p
-                1234:1234`.
-              </p>
-            </div>
-          </article>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
-          <article className="rounded-[36px] border border-white/12 bg-slate-950/55 p-6 shadow-[0_25px_90px_rgba(15,23,42,0.2)] backdrop-blur md:p-8">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="font-mono text-xs uppercase tracking-[0.3em] text-slate-300/75">
-                  Proximas horas
-                </p>
-                <h3 className="mt-3 text-2xl font-semibold text-white">
-                  Evolucion del dia
-                </h3>
-              </div>
-              {error ? (
-                <p className="rounded-full border border-rose-300/20 bg-rose-500/12 px-4 py-2 text-sm text-rose-100">
-                  {error}
-                </p>
-              ) : (
-                <p className="rounded-full border border-emerald-300/20 bg-emerald-500/12 px-4 py-2 text-sm text-emerald-100">
-                  {busy ? "Actualizando datos" : "Datos listos"}
-                </p>
-              )}
-            </div>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {forecast?.hourly.map((entry) => (
-                <article
-                  key={entry.time}
-                  className="rounded-[28px] border border-white/12 bg-white/6 p-5"
-                >
-                  <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-300/70">
-                    {formatHourLabel(entry.time)}
-                  </p>
-                  <p className="mt-4 text-4xl font-semibold text-white">
-                    {Math.round(entry.temperature)}C
-                  </p>
-                  <p className="mt-3 text-sm leading-6 text-slate-300">
-                    {getWeatherLabel(entry.weatherCode)}
-                  </p>
-                </article>
-              )) ?? (
-                <article className="rounded-[28px] border border-dashed border-white/16 bg-white/4 p-5 text-slate-300">
-                  Esperando datos horarios...
-                </article>
-              )}
-            </div>
-          </article>
-
-          <article className="rounded-[36px] border border-white/12 bg-slate-950/55 p-6 shadow-[0_25px_90px_rgba(15,23,42,0.2)] backdrop-blur md:p-8">
-            <p className="font-mono text-xs uppercase tracking-[0.3em] text-slate-300/75">
-              Proximos dias
-            </p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">
-              Mini prevision
-            </h3>
-
-            <div className="mt-8 space-y-3">
-              {forecast?.daily.map((entry) => (
-                <article
-                  key={entry.date}
-                  className="rounded-[28px] border border-white/12 bg-white/6 p-5"
-                >
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="font-mono text-xs uppercase tracking-[0.24em] text-slate-300/70">
-                        {formatDayLabel(entry.date)}
-                      </p>
-                      <p className="mt-2 text-base text-white">
-                        {getWeatherLabel(entry.weatherCode)}
-                      </p>
-                    </div>
-                    <div className="text-right text-white">
-                      <p className="text-xl font-semibold">
-                        {Math.round(entry.maxTemperature)}C
-                      </p>
-                      <p className="text-sm text-slate-300">
-                        min {Math.round(entry.minTemperature)}C
-                      </p>
-                    </div>
-                  </div>
-                </article>
-              )) ?? (
-                <article className="rounded-[28px] border border-dashed border-white/16 bg-white/4 p-5 text-slate-300">
-                  Esperando prevision diaria...
-                </article>
-              )}
-            </div>
-
-            <div className="mt-8 rounded-[28px] border border-white/12 bg-gradient-to-br from-cyan-400/14 to-emerald-400/10 p-5">
-              <p className="font-mono text-xs uppercase tracking-[0.28em] text-cyan-100/80">
-                Checklist para la defensa
-              </p>
-              <ul className="mt-4 space-y-2 text-sm leading-7 text-slate-100">
-                <li>1. Ensena la app funcionando en http://tu-ip:1234</li>
-                <li>2. Abre los workflows de CI y deploy</li>
-                <li>3. Haz un commit, push y espera el redeploy automatico</li>
-                <li>4. Verifica el contenedor con docker ps y docker logs</li>
-              </ul>
-            </div>
-          </article>
-        </section>
-      </div>
+          {error ? (
+            <p className="mt-4 text-sm text-rose-200">{error}</p>
+          ) : null}
+        </div>
+      </section>
     </main>
   );
 }
